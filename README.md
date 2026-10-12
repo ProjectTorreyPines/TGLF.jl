@@ -1,9 +1,9 @@
-[![codecov](https://codecov.io/github/ProjectTorreyPines/TJLF.jl/graph/badge.svg?token=1NY1YYLBWH)](https://codecov.io/github/ProjectTorreyPines/TJLF.jl)
-![Docs](https://github.com/ProjectTorreyPines/TJLF.jl/actions/workflows/make_docs.yml/badge.svg)
+[![codecov](https://codecov.io/github/ProjectTorreyPines/TGLF.jl/graph/badge.svg?token=1NY1YYLBWH)](https://codecov.io/github/ProjectTorreyPines/TGLF.jl)
+![Docs](https://github.com/ProjectTorreyPines/TGLF.jl/actions/workflows/make_docs.yml/badge.svg)
 
-# TJLF
+# TGLF.jl
 
-**TJLF** ("TGLF in Julia, Learned from Fortran") is a Julia port of
+**TGLF.jl** (internal package name **TJLF**, "TGLF in Julia, Learned from Fortran") is a Julia port of
 [TGLF](https://gafusion.github.io/doc/tglf.html), the quasi-linear model of
 gyrokinetic turbulent transport. Given a local plasma equilibrium and its
 gradients, TJLF predicts the turbulent particle, energy, and momentum fluxes
@@ -14,8 +14,14 @@ through a golden-output regression suite — and adds two things the Fortran doe
 not have: an optional **GPU eigensolver** and **full automatic differentiation**,
 so you can take exact gradients of the predicted fluxes with respect to any input.
 
+> **Naming.** The official name of this software, for publications and the
+> repository, is **TGLF.jl** (formerly `TJLF.jl`). The internal Julia package
+> and its API keep the `TJLF` name: `using TJLF`, the same UUID, `InputTJLF`,
+> `run_tjlf`, the `:TJLF` model selectors downstream, etc. Existing code and
+> environments are unaffected.
+
 For the full API reference, see the
-[online documentation](https://projecttorreypines.github.io/TJLF.jl/dev).
+[online documentation](https://projecttorreypines.github.io/TGLF.jl/dev).
 
 ## Capabilities
 
@@ -201,9 +207,9 @@ Unused legacy parameters were removed from `InputTJLF`:
 `VPAR_SHEAR_MODEL`, `WRITE_WAVEFUNCTION_FLAG`, `VTS_SHEAR`, `VNS_SHEAR`, `VEXB`,
 `RMIN_SA`, `RMAJ_SA`, `Q_SA`, `SHAT_SA`, `ALPHA_SA`, `XWELL_SA`, `THETA0_SA`,
 `NN_MAX_ERROR`. See commits
-[b9a9c99](https://github.com/ProjectTorreyPines/TJLF.jl/commit/b9a9c99b40a3ba5fcbc683eb94df4ec8b6fd5671)
+[b9a9c99](https://github.com/ProjectTorreyPines/TGLF.jl/commit/b9a9c99b40a3ba5fcbc683eb94df4ec8b6fd5671)
 and
-[18f810f](https://github.com/ProjectTorreyPines/TJLF.jl/commit/18f810fdf277a691b584f987781b976cccdcbb5b).
+[18f810f](https://github.com/ProjectTorreyPines/TGLF.jl/commit/18f810fdf277a691b584f987781b976cccdcbb5b).
 
 ## Eigenvalue solvers
 
@@ -287,6 +293,6 @@ suites cover saturation rules (`runtests_sat.jl`), electromagnetic runs
 
 ## Citation
 
-If this software contributes to an academic publication, please cite it as follows:
+If this software contributes to an academic publication, please refer to it as **TGLF.jl** and cite it as follows:
 
 > T.F. Neiser, D. Sun, B. Agnew, T. Slendebroek, O. Meneghini, B.C. Lyons, A. Ghiozzi, J. McClenaghan, G. Staebler and J. Candy, _TJLF: The quasi-linear model of gyrokinetic transport TGLF translated to Julia_, APS Meeting Abstracts (2024)

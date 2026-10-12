@@ -19,7 +19,7 @@ end
 makedocs(;
     modules=[TJLF],
     format=Documenter.HTML(;analytics="G-65D8V8C8VQ"),
-    sitename="TJLF",
+    sitename="TGLF.jl",
     checkdocs=:none,
     pages=["index.md", "api.md", "License" => "license.md", "Notice" => "notice.md"],
     warnonly=true
@@ -28,15 +28,15 @@ makedocs(;
 # Deploy docs
 # This function deploys the documentation to the gh-pages branch of the repository.
 # The main documentation that will be hosted on
-# https://projecttorreypines.github.io/TJLF.jl/stable
+# https://projecttorreypines.github.io/TGLF.jl/stable
 # will be built from latest release tagged with a version number.
 # The development documentation that will be hosted on
-# https://projecttorreypines.github.io/TJLF.jl/dev
+# https://projecttorreypines.github.io/TGLF.jl/dev
 # will be built from the latest commit on the chosen devbranch argument below.
 # For testing purposes, the devbranch argument can be set to WIP branch like "docs".
 # While merging with master, the devbranch argument should be set to "master".
 deploydocs(;
-    repo="github.com/ProjectTorreyPines/TJLF.jl.git",
+    repo="github.com/ProjectTorreyPines/TGLF.jl.git",
     target="build",
     branch="gh-pages",
     devbranch="master",
