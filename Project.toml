@@ -1,6 +1,6 @@
 name = "TJLF"
 uuid = "12ecd31c-256b-4db5-a799-cd5afeb0bd7d"
-version = "2.0.3"
+version = "2.0.4"
 authors = ["Tom Neiser <neisert@fusion.gat.com>", "Danny Sun <dannysun@alumni.princeton.edu>"]
 
 [deps]
