@@ -3,22 +3,16 @@
 
 # TGLF.jl
 
-**TGLF.jl** (internal package name **TJLF**, "TGLF in Julia, Learned from Fortran") is a Julia port of
+**TGLF.jl** is the Julia implementation of
 [TGLF](https://gafusion.github.io/doc/tglf.html), the quasi-linear model of
 gyrokinetic turbulent transport. Given a local plasma equilibrium and its
-gradients, TJLF predicts the turbulent particle, energy, and momentum fluxes
+gradients, TGLF.jl predicts the turbulent particle, energy, and momentum fluxes
 that drive cross-field transport in tokamaks.
 
 It is a faithful translation of the Fortran TGLF code — **verified against it**
 through a golden-output regression suite — and adds two things the Fortran does
 not have: an optional **GPU eigensolver** and **full automatic differentiation**,
 so you can take exact gradients of the predicted fluxes with respect to any input.
-
-> **Naming.** The official name of this software, for publications and the
-> repository, is **TGLF.jl** (formerly `TJLF.jl`). The internal Julia package
-> and its API keep the `TJLF` name: `using TJLF`, the same UUID, `InputTJLF`,
-> `run_tjlf`, the `:TJLF` model selectors downstream, etc. Existing code and
-> environments are unaffected.
 
 For the full API reference, see the
 [online documentation](https://projecttorreypines.github.io/TGLF.jl/dev).
@@ -30,7 +24,7 @@ For the full API reference, see the
    and exchange, returned per `[field, species, type]`.
 2. **All TGLF saturation rules** — `SAT_RULE` 0, 1, 2, and 3.
 3. **Electrostatic and electromagnetic** runs (`USE_BPER`, `USE_BPAR`).
-4. **Verified against Fortran TGLF** — a regression suite checks TJLF's fluxes
+4. **Verified against Fortran TGLF** — a regression suite checks TGLF.jl's fluxes
    against archived TGLF `out.tglf.gbflux` golden outputs across several cases.
 5. **Standard TGLF inputs** — read a plain `input.tglf` file with `readInput`, or
    build/convert from an `InputTGLF`/`InputTJLF` struct.
@@ -46,7 +40,7 @@ For the full API reference, see the
 
 ## Installation
 
-TJLF requires Julia **1.11+** and is registered in the
+TGLF.jl requires Julia **1.11+** and is registered in the
 [FuseRegistry](https://github.com/ProjectTorreyPines/FuseRegistry).
 
 ```julia
@@ -183,9 +177,9 @@ have **no meaningful defaults** — `checkInput` will error on an incompletely
 populated struct, so you are always aware of exactly which parameters you are
 using.
 
-### TJLF-specific parameters
+### TGLF.jl-specific parameters
 
-- `FIND_WIDTH::Bool` — repurposed from the TGLF flag: tells TJLF whether to solve
+- `FIND_WIDTH::Bool` — repurposed from the TGLF flag: tells TGLF.jl whether to solve
   for the Gaussian mode width (`true`) or use an externally provided width
   spectrum (`false`), avoiding extra width-search calls.
 - `WIDTH_SPECTRUM::Vector` — the per-ky width spectrum. Populated automatically
@@ -213,7 +207,7 @@ and
 
 ## Eigenvalue solvers
 
-TJLF supports multiple eigenvalue-solver strategies with different
+TGLF.jl supports multiple eigenvalue-solver strategies with different
 robustness/performance trade-offs:
 
 - **Direct LAPACK (default, `FIND_EIGEN=true`)** — `gesv!` + `geev!` from
@@ -244,9 +238,9 @@ requested without a functional CUDA runtime. Requires a CUDA toolkit/runtime
 
 Loading `ForwardDiff` activates `TJLFForwardDiffExt`, which makes the whole flux
 calculation differentiable. LAPACK has no `Dual`-number support, so for
-`ForwardDiff.Dual` element types TJLF computes the `Float64` eigensystem with
+`ForwardDiff.Dual` element types TGLF.jl computes the `Float64` eigensystem with
 LAPACK and propagates the perturbation analytically via the implicit function
-theorem. These specializations are defined on **TJLF-owned** eigen wrappers, not
+theorem. These specializations are defined on **TGLF.jl-owned** eigen wrappers, not
 on `LinearAlgebra.eigen`, so there is no type piracy and no effect on other
 packages. With `use_gpu=true` the same `Dual` eigensolve + gradient runs on the
 GPU. Gradients match finite differences (and the GPU path matches the CPU path to
@@ -256,18 +250,18 @@ GPU. Gradients match finite differences (and the GPU path matches the CPU path t
 
 See `test/test_multithreads` for benchmarks.
 
-TJLF parallelizes over `ky` with Julia threads, each doing small dense LAPACK
+TGLF.jl parallelizes over `ky` with Julia threads, each doing small dense LAPACK
 solves. If BLAS is also multithreaded, those kernels oversubscribe cores (e.g.
 8 Julia threads × 128 BLAS threads) and per-solve time can balloon ~100×.
 
-**TJLF handles this automatically.** It wraps its threaded entry points (`run`,
+**TGLF.jl handles this automatically.** It wraps its threaded entry points (`run`,
 `run_tjlf`, and the transport-model loop) with `with_blas_threads(1)`, which sets
 the BLAS thread count to 1 for the duration of the call and restores it
-afterwards. This is scoped to TJLF's own drivers, so loading TJLF does not change
+afterwards. This is scoped to TGLF.jl's own drivers, so loading TGLF.jl does not change
 BLAS threading for the rest of a host application (e.g. FUSE) — **no manual setup
 is required**.
 
-If you thread over your *own* TJLF calls, set BLAS=1 once outside the threaded
+If you thread over your *own* TGLF.jl calls, set BLAS=1 once outside the threaded
 region (nested scopes short-circuit, so there are no BLAS races):
 
 ```julia
@@ -279,12 +273,12 @@ end
 ```
 
 Setting `export OMP_NUM_THREADS=1` in the shell is a reasonable
-belt-and-suspenders but is no longer required for TJLF's own scaling.
+belt-and-suspenders but is no longer required for TGLF.jl's own scaling.
 
 ## Verification
 
-TJLF's trust anchor is its test suite. `test/runtests_regressions.jl` runs each
-case in `test/tglf_regression/` through TJLF and compares the fluxes against the
+TGLF.jl's trust anchor is its test suite. `test/runtests_regressions.jl` runs each
+case in `test/tglf_regression/` through TGLF.jl and compares the fluxes against the
 archived Fortran TGLF `out.tglf.gbflux` golden output (to `atol=1e-2`). Companion
 suites cover saturation rules (`runtests_sat.jl`), electromagnetic runs
 (`runtests_EM.jl`), the transport model (`runtests_tm.jl`), the eigensolver
