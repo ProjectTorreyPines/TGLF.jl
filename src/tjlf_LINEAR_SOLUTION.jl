@@ -30,6 +30,34 @@ function construct_linear_map(A, B, sigma)
     LinearMap{eltype(A)}((y,x) -> ldiv!(y, P, B*x),size(A, 1))
 end
 
+"""
+    fit_workspace!(ws::LSWorkspace{T}, inputs::InputTJLF{T}, nbasis::Int)
+
+Size (or resize) the workspace buffers for `inputs.NS` species and `nbasis` basis functions.
+A no-op when they already fit. Returns `ws`.
+"""
+function fit_workspace!(ws::LSWorkspace{T}, inputs::InputTJLF{T}, nbasis::Int) where {T<:Real}
+    ns = inputs.NS
+    ns0 = ifelse(inputs.ADIABATIC_ELEC, 2, 1)
+    iur = (ns - ns0 + 1) * 15 * nbasis
+    if ws.aves === nothing || ws.ns != ns || ws.nbasis != nbasis
+        ws.aves = new_aves(inputs, nbasis)
+        ws.ns = ns
+        ws.nbasis = nbasis
+    end
+    if ws.iur != iur || size(ws.amat, 1) != iur
+        K = Complex{T}
+        ws.amat = Matrix{K}(undef, iur, iur)
+        ws.bmat = Matrix{K}(undef, iur, iur)
+        ws.amat_copy = Matrix{K}(undef, iur, iur)
+        ws.bmat_copy = Matrix{K}(undef, iur, iur)
+        ws.zmat = Matrix{K}(undef, iur, iur)
+        ws.eigenvector = Vector{K}(undef, iur)
+        ws.iur = iur
+    end
+    return ws
+end
+
 function tjlf_LS(inputs::InputTJLF{T}, satParams::SaturationParameters{T}, outputHermite::OutputHermite{T},
             ky::T,
             nbasis::Int,
@@ -40,7 +68,8 @@ function tjlf_LS(inputs::InputTJLF{T}, satParams::SaturationParameters{T}, outpu
             freq_reference_kx0::Vector{T} = T[],
             outputGeo::Union{OutputGeometry{T},Missing} = missing,
             find_eigenvector::Bool = false,
-            aves = new_aves(inputs, nbasis),
+            workspace::Union{Nothing,LSWorkspace{T}} = nothing,
+            aves = workspace === nothing ? new_aves(inputs, nbasis) : fit_workspace!(workspace, inputs, nbasis).aves::AvesTuple{T},
             use_gpu::Bool = false) where T <: Real
 
     epsilon1 = 1.0e-12
@@ -104,10 +133,18 @@ function tjlf_LS(inputs::InputTJLF{T}, satParams::SaturationParameters{T}, outpu
     end
 
     K = Complex{T}
-    amat = Matrix{K}(undef, iur, iur)
-    bmat = Matrix{K}(undef, iur, iur)
+    if workspace === nothing
+        amat = Matrix{K}(undef, iur, iur)
+        bmat = Matrix{K}(undef, iur, iur)
+    else
+        # reuse the caller's buffers (sized by fit_workspace! in the kwarg default above);
+        # tjlf_eigensolver overwrites every entry of both matrices
+        fit_workspace!(workspace, inputs, nbasis)
+        amat = workspace.amat
+        bmat = workspace.bmat
+    end
     #  solver for linear eigenmodes of tglf equations
-    eigenvalues, v = tjlf_eigensolver(inputs,outputGeo,satParams,ave,aveH,aveWH,aveKH,aveG,aveWG,aveKG,aveGrad,aveGradB, nbasis,ky, amat,bmat,ky_index,find_eigenvector; use_gpu=use_gpu)
+    eigenvalues, v = tjlf_eigensolver(inputs,outputGeo,satParams,ave,aveH,aveWH,aveKH,aveG,aveWG,aveKG,aveGrad,aveGradB, nbasis,ky, amat,bmat,ky_index,find_eigenvector; use_gpu=use_gpu, workspace=workspace)
 
     rr = real.(eigenvalues)
     ri = imag.(eigenvalues)
@@ -248,8 +285,13 @@ function tjlf_LS(inputs::InputTJLF{T}, satParams::SaturationParameters{T}, outpu
 
         # used for computing eigenvector
         if inputs.SMALL != 0.0
-            zmat = similar(amat)
-            eigenvector = Vector{K}(undef,iur)
+            if workspace === nothing
+                zmat = similar(amat)
+                eigenvector = Vector{K}(undef,iur)
+            else
+                zmat = workspace.zmat
+                eigenvector = workspace.eigenvector
+            end
         end
         for imax = 1:nmodes_out
             if (jmax[imax] > 0)

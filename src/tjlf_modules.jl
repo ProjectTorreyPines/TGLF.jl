@@ -1354,3 +1354,40 @@ function reset_ave!(ave::AbstractAve{T}) where {T<:Number}
         fill!(getproperty(ave, fieldname), zero(T))
     end
 end
+
+const AvesTuple{T} = Tuple{Ave{T},AveH{T},AveWH{T},AveKH{Complex{T}},AveG{T},AveWG{T},AveKG{Complex{T}},AveGrad{T},AveGradB{T}}
+
+"""
+    LSWorkspace{T}()
+
+Reusable buffers for repeated single-ky linear solves (`TJLF.run(input; workspace)` /
+`tjlf_LS(...; workspace)`): the dense `iur × iur` eigenmatrices `amat`/`bmat`, the two
+copies the LAPACK solve destroys, the inverse-iteration matrix `zmat`, the eigenvector,
+and the `Ave*` structs. Without it every call allocates these afresh (five complex
+`iur × iur` matrices, ~165 MB at 3 species / NBASIS=32), a heavy load on the garbage
+collector when many threads solve at once.
+
+The buffers are sized on first use and resized when `(NS, nbasis)` changes. A workspace
+must not be shared between concurrently running tasks: keep one per task. Results are
+bit-identical to a call without a workspace (same operations on the same values; only
+the storage is reused).
+"""
+mutable struct LSWorkspace{T<:Real}
+    ns::Int
+    nbasis::Int
+    iur::Int
+    amat::Matrix{Complex{T}}
+    bmat::Matrix{Complex{T}}
+    amat_copy::Matrix{Complex{T}}
+    bmat_copy::Matrix{Complex{T}}
+    zmat::Matrix{Complex{T}}
+    eigenvector::Vector{Complex{T}}
+    aves::Union{Nothing,AvesTuple{T}}
+end
+
+function LSWorkspace{T}() where {T<:Real}
+    K = Complex{T}
+    e() = Matrix{K}(undef, 0, 0)
+    return LSWorkspace{T}(0, 0, 0, e(), e(), e(), e(), e(), Vector{K}(undef, 0), nothing)
+end
+LSWorkspace() = LSWorkspace{Float64}()

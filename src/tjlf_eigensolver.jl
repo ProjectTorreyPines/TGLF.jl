@@ -22,7 +22,8 @@ function tjlf_eigensolver(inputs::InputTJLF{T},outputGeo::OutputGeometry{T},satP
                         nbasis::Int, ky::T,
                         amat::Matrix{K},bmat::Matrix{K},
                         ky_index::Int,
-                        find_eigenvector::Bool; use_gpu::Bool=false) where T<:Real where K<:Complex
+                        find_eigenvector::Bool; use_gpu::Bool=false,
+                        workspace::Union{Nothing,LSWorkspace{T}}=nothing) where T<:Real where K<:Complex
 
     ft = outputGeo.fts[1]  # electrons
     ft2 = ft^2
@@ -2732,8 +2733,14 @@ function tjlf_eigensolver(inputs::InputTJLF{T},outputGeo::OutputGeometry{T},satP
             # the CPU non-transport path match the GPU path, which already solves
             # this way (see the use_gpu branch below).
             if inputs.IFLUX || find_eigenvector
-                amat_copy = copy(amat)
-                bmat_copy = copy(bmat)
+                if workspace === nothing
+                    amat_copy = copy(amat)
+                    bmat_copy = copy(bmat)
+                else
+                    # same values, caller-owned storage (the solve destroys both copies)
+                    amat_copy = copyto!(workspace.amat_copy, amat)
+                    bmat_copy = copyto!(workspace.bmat_copy, bmat)
+                end
                 alpha = _standard_eigenvalues_via_solve(amat_copy, bmat_copy; use_gpu=use_gpu)
             else
                 alpha = _standard_eigenvalues_via_solve(amat, bmat; use_gpu=use_gpu)

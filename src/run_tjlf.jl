@@ -24,16 +24,20 @@ description:
     the width and eigenvalue spectra found during the run are saved back into the
     input struct for reuse via the `FIND_WIDTH`/`FIND_EIGEN` flags.
 
+    For repeated single-`ky` solves (`USE_TRANSPORT_MODEL=false`) pass
+    `workspace = LSWorkspace()` (one per task) to reuse the large eigenmatrix
+    buffers between calls; results are unchanged.
+
 !!! note
     `run` is exported but shadows `Base.run`, so call it as `TJLF.run`.
 """
-function run(inputTJLF::InputTJLF; use_gpu::Bool=false)
+function run(inputTJLF::InputTJLF; use_gpu::Bool=false, workspace::Union{Nothing,LSWorkspace}=nothing)
     return with_blas_threads(1) do
-        _run_impl(inputTJLF; use_gpu=use_gpu)
+        _run_impl(inputTJLF; use_gpu=use_gpu, workspace=workspace)
     end
 end
 
-function _run_impl(inputTJLF::InputTJLF; use_gpu::Bool=false)
+function _run_impl(inputTJLF::InputTJLF; use_gpu::Bool=false, workspace::Union{Nothing,LSWorkspace}=nothing)
     use_tm = inputTJLF.USE_TRANSPORT_MODEL
     if use_tm
         apply_presets!(inputTJLF)
@@ -79,7 +83,8 @@ function _run_impl(inputTJLF::InputTJLF; use_gpu::Bool=false)
         nmodes_out, gamma_out, freq_out,
             particle_QL_out, energy_QL_out, stress_tor_QL_out, stress_par_QL_out, exchange_QL_out,
             _ft, field_weight_out_3d, _phi = tjlf_LS(inputTJLF, satParams, outputHermite,
-                                                      inputTJLF.KY, nbasis, inputTJLF.VEXB_SHEAR, 1; use_gpu=use_gpu)
+                                                      inputTJLF.KY, nbasis, inputTJLF.VEXB_SHEAR, 1;
+                                                      use_gpu=use_gpu, workspace=workspace)
 
         eigenvalue       = zeros(Float64, nmodes, 1, 2)
         QL_weights       = zeros(Float64, 3, ns, nmodes, 1, 5)
