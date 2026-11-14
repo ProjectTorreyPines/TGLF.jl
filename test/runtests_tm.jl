@@ -73,8 +73,10 @@ for dir_name in tests
         gammaJulia = eigenvalue[:, :, 1]
         freqJulia = eigenvalue[:, :, 2]
 
-        for i in eachindex(fluxes[1, :, :, :, :])
-            @test isapprox(QL_data[i], (fluxes[1, :, :, :, :])[i], atol=1e-6)
+        # TGLF writes the first nfield fields; compare them element by element (eachindex checks the shapes)
+        QL_julia = fluxes[1:nfield, :, :, :, :]
+        for i in eachindex(QL_data, QL_julia)
+            @test isapprox(QL_data[i], QL_julia[i], atol=1e-6)
         end
         for i in eachindex(gammaJulia)
             @test isapprox(gamma[i], gammaJulia'[i], atol=1e-6)
