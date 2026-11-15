@@ -156,3 +156,29 @@ for dir_name in tests
     end
 end
 
+
+# SAT3 with the spectral peak on a wavenumber of the grid, and a mode that carries no weight at
+# the next wavenumber: the weight ratio at the peak must come from the two wavenumbers bracketing
+# it, where the mode exists, and the fluxes must be finite
+@testset "SAT3 weight ratio at a grid wavenumber" begin
+    @test TJLF.linear_interpolation([1.0, 2.0, 3.0], [1.0, 2.0, NaN], 2.0) == 2.0
+    @test TJLF.linear_interpolation([1.0, 2.0, 3.0], [1.0, 2.0, 4.0], 2.5) == 3.0
+
+    input = readInput(joinpath(@__DIR__, "test_SAT_rules", "SAT3", "input.tglf"))
+    out = TJLF.run(input)
+    satParams = TJLF.get_sat_params(input)
+    gammas = out.eigenvalue[:, :, 1]
+    vzf, _, jmax = TJLF.get_zonal_mixing(input, satParams, gammas[1, :])
+    ky = input.KY_SPECTRUM
+    @test 1 < jmax < length(ky)
+    sum_fluxes(W) = TJLF.sum_ky_spectrum(input, satParams, gammas, W; vzf_out_param=vzf, kymax_out_param=ky[jmax], jmax_out_param=jmax)[1]
+
+    W = copy(out.QL_weights)
+    mode = size(W, 3)
+    W[:, :, mode, jmax-1:jmax, :] .= W[:, :, 1, jmax-1:jmax, :]
+    reference = sum_fluxes(W)
+    @test all(isfinite, reference)
+
+    W[:, :, mode, jmax+1, :] .= 0.0
+    @test all(isfinite, sum_fluxes(W))
+end

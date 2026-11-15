@@ -218,8 +218,10 @@ description:
     at a x0 value given the x and y arrays
 """
 function linear_interpolation(x::AbstractVector, y::AbstractVector, x0)
+    # strict comparison as in the Fortran: at x0 == x[i] the pair is (i-1, i), the same pair
+    # that the callers test or fill before interpolating
     i = 1
-    while (x[i] <= x0)
+    while (x[i] < x0)
         i += 1
     end
     return ((y[i] - y[i-1]) * x0 + (x[i] * y[i-1] - x[i-1]*y[i])) / (x[i] - x[i-1])
