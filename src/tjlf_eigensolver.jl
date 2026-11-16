@@ -1127,8 +1127,8 @@ function tjlf_eigensolver(inputs::InputTJLF{T},outputGeo::OutputGeometry{T},satP
                     phi_A = N_j*im*w_s*vpar_shear[is]*hp1/vsIS
                     phi_B = zero(K)
                     if(vpar_model_in==0)
-                        phi_A = phi_A  +N_j*im*w_cd*wdhp1p0*vpar[is]/vsIS
-                            + d_1*(nuei_u_u_1+nuei_u_q3_1*5.0/3.0)*hp1*E_i*N_j*vpar[is]/vsIS
+                        phi_A = phi_A  +N_j*im*w_cd*wdhp1p0*vpar[is]/vsIS +
+                            d_1*(nuei_u_u_1+nuei_u_q3_1*5.0/3.0)*hp1*E_i*N_j*vpar[is]/vsIS
                         phi_B = -E_i*N_j*hp1*vpar[is]/vsIS
                     end
                     sig_A = zero(K)
